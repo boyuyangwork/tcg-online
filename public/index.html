@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TCG Online - Dark Theme</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <h1>TCG Online <span style="font-size:14px; color:var(--color-accent)">| Dark Edition</span></h1>
+    <section class="top-section">
+      <div class="top-left">
+        <section class="conn">
+          <label>Server: <input id="serverUrl" value="ws://localhost:8080"/></label>
+          <label>Room: <input id="roomId" value="test"/></label>
+          <label>名稱: <input id="playerName" placeholder="輸入名稱" maxlength="16"/></label>
+          <label>Role:
+            <select id="role">
+              <option value="PLAYER">玩家</option>
+              <option value="SPECTATOR">觀戰</option>
+            </select>
+          </label>
+          <button id="btnConnect">連線/加入</button>
+          <button id="btnDisconnect" disabled>中斷連線</button>
+        </section>
+
+        <section class="controls">
+          <input type="file" id="deckCsvFile" accept=".csv"/>
+          <button id="btnImportCsv">匯入 CSV 牌組</button>
+          <button id="btnClearDeck">清空牌組</button>
+          <button id="btnStart">開始對戰(洗牌+起手5)</button>
+          <button id="btnReset">重新開始</button>
+          <button id="btnFlipCoin">擲硬幣</button>
+
+          <button id="btnShuffle">洗牌</button>
+          <button id="btnDraw1">抽1</button>
+          <button id="btnDraw5">抽5</button>
+          <button id="btnSearchDeck">檢索牌組</button>
+          <button id="btnSearchExtra">檢索額外牌組</button>
+          <button id="btnSummonToken">召喚 token</button>
+          <label style="margin-left:8px">
+            <input type="checkbox" id="chkFaceDown">
+            以蓋牌方式放到場上
+          </label>
+        </section>
+      </div>
+
+      <aside class="top-right">
+        <h3>房間共用記事 (Shared Note)</h3>
+        <textarea id="sharedNote" placeholder="在這裡輸入文字，所有人都能看到喔"></textarea>
+      </aside>
+    </section>
+
+    <section class="board">
+      <div class="column">
+        <h3>你的手牌</h3>
+        <ul id="hand" class="list dropzone zone-grid" data-zone="HAND"></ul>
+        
+        <h3>檢索結果 (只有你看得到)</h3>
+        <ul id="searchResults" class="list"></ul>
+      </div>
+
+      <div class="column">
+        <div class="opponent-header">
+          <h3>對手場地 (Opponent Field)</h3>
+          <div id="opponentCounts"></div>
+        </div>
+        <div id="opFieldBoard"></div>
+
+        <div class="player-header">
+          <h3>你的場地 (Your Field)</h3>
+          <div id="myCounts"></div>
+        </div>
+        <div id="fieldBoard" class="dropzone"></div>
+      </div>
+
+      <div class="column">
+        <div class="deck-header">
+          <h3>你的牌組（丟回底部）</h3>
+          <label>
+            <input type="checkbox" id="chkToBottom">
+            回牌組頂部
+          </label>
+        </div>
+        
+        <ul id="deckDrop" class="list dropzone" data-zone="DECK"></ul>
+        
+        <h3>你的墓地</h3>
+        <ul id="grave" class="list dropzone zone-grid" data-zone="GRAVE"></ul>
+        <h3>除外區</h3>
+        <ul id="banish" class="list dropzone zone-grid" data-zone="BANISH"></ul>
+      </div>
+    </section>
+
+    <section class="log">
+      <h3>對戰紀錄 (System Log)</h3>
+      <pre id="log"></pre>
+    </section>
+  </div>
+  
+  <script src="main.js"></script>
+</body>
+</html>

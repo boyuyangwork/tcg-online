@@ -1,0 +1,21 @@
+{
+  "name": "tcg-online",
+  "version": "1.0.0",
+  "description": "A real-time online Trading Card Game MVP built with Node.js and WebSockets.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "tcg",
+    "websocket",
+    "nodejs",
+    "game",
+    "real-time"
+  ],
+  "author": "boyuyangwork",
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.16.0"
+  }
+}
