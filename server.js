@@ -7,7 +7,7 @@
 const WebSocket = require('ws');
 
 // --- 伺服器配置 ---
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
 const wss = new WebSocket.Server({ port: PORT });
 
 // --- 核心資料結構 ---
