@@ -409,17 +409,48 @@ $("btnDisconnect").onclick = () => { disconnect(); };
 
 $("btnImportCsv").onclick = async () => {
   if (!ws || ws.readyState !== 1) return alert("尚未連線");
+  
   const file = $("deckCsvFile").files[0];
-  if (!file) return alert("請選擇 CSV 檔");
-  const text = await file.text();
+  if (!file) return alert("請選擇 .csv 或 .ydk 牌組檔案");
+  
+  const fileName = file.name.toLowerCase();
+  let text = "";
+
+  try {
+      if (fileName.endsWith('.csv')) {
+          console.log("偵測到 CSV，直接讀取檔案...");
+          text = await file.text();
+      } else if (fileName.endsWith('.ydk')) {
+          console.log("偵測到 YDK，啟動 API 轉換引擎...");
+          text = await processYdkFile(file);
+          if (!text) return;
+      } else {
+          return alert("不支援的檔案格式！請上傳 .csv 或 .ydk 檔案。");
+      }
+  } catch (err) {
+      console.error("檔案處理發生錯誤:", err);
+      return alert("檔案讀取失敗，請確認檔案格式是否正確。");
+  }
+
   const records = parseCSV(text);
   if (!records.length) return alert("CSV 內容為空或格式不正確");
+  
   const deck = csvToDeck(records);
   const m = deck.main.length, s = deck.side.length;
+  
   if (m < 40 || m > 60) return alert("主牌組需 40–60 張，目前：" + m);
   if (s > 15) return alert("副牌組最多 15 張，目前：" + s);
-  ws.send(JSON.stringify({ type: "IMPORT_DECK", main: deck.main, side: deck.side, extra: deck.extra }));
+  
+  ws.send(JSON.stringify({ 
+      type: "IMPORT_DECK", 
+      main: deck.main, 
+      side: deck.side, 
+      extra: deck.extra 
+  }));
+  
+  console.log("✅ 牌組匯入成功並已發送給伺服器！");
 };
+
 $("btnStart").onclick = () => {
   if (!ws || ws.readyState !== 1) return alert("尚未連線");
   ws.send(JSON.stringify({ type: "START_GAME" }));
@@ -520,6 +551,85 @@ function bindSharedNote() {
     if (!ws || ws.readyState !== 1) return;
     ws.send(JSON.stringify({ type: "UPDATE_NOTE", text: note.value }));
   });
+}
+
+async function processYdkFile(file) {
+    const text = await file.text();
+    const lines = text.split('\n').map(line => line.trim());
+
+    const deckList = [];
+    let currentDeckType = "main"; 
+    const uniqueIds = new Set();
+
+    for (const line of lines) {
+        if (!line) continue;
+        
+        if (line.startsWith('#main')) {
+            currentDeckType = "main";
+            continue;
+        } else if (line.startsWith('#extra')) {
+            currentDeckType = "extra";
+            continue;
+        } else if (line.startsWith('!side')) {
+            currentDeckType = "side";
+            continue;
+        }
+
+        if (/^\d+$/.test(line)) {
+            deckList.push({
+                id: line,
+                deckType: currentDeckType
+            });
+            uniqueIds.add(line);
+        }
+    }
+
+    if (uniqueIds.size === 0) {
+        alert("在這個檔案中找不到任何有效的卡片 ID！");
+        return null;
+    }
+
+    console.log(`成功解析出 ${deckList.length} 張卡片（共 ${uniqueIds.size} 種），準備發送批次 API 請求...`);
+
+    const idsArray = Array.from(uniqueIds);
+    const apiUrl = `https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${idsArray.join(',')}`;
+
+    try {
+        const response = await fetch(apiUrl);
+        if (!response.ok) throw new Error(`API 請求失敗，狀態碼：${response.status}`);
+        
+        const data = await response.json();
+        
+        const cardDataMap = {};
+        for (const card of data.data) {
+            cardDataMap[card.id.toString()] = {
+                name: card.name,
+                img: card.card_images[0].image_url_small
+            };
+        }
+
+        let csvOutput = "baseId,name,img,deckType\n";
+
+        for (const item of deckList) {
+            const cardInfo = cardDataMap[item.id];
+            
+            if (cardInfo) {
+                const safeName = `"${cardInfo.name.replace(/"/g, '""')}"`;
+                
+                csvOutput += `${item.id},${safeName},${cardInfo.img},${item.deckType}\n`;
+            } else {
+                console.warn(`API 找不到 ID 為 ${item.id} 的卡片`);
+            }
+        }
+
+        console.log("🎉 YDK 完美轉換為你的 CSV 格式！\n", csvOutput);
+        return csvOutput;
+
+    } catch (error) {
+        console.error("處理 YDK 檔案時發生錯誤：", error);
+        alert("轉換失敗，請檢查網路連線或檔案格式。");
+        return null;
+    }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
