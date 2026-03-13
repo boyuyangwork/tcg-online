@@ -242,8 +242,11 @@ function moveCard(roomId, playerId, fromZone, toZone, cardId, faceDown, pos, toB
             card.faceDown = true; // 進入牌組/額外牌組通常視為蓋牌
         }
     }
-
-    if (toZone === 'DECK' && toBottom) {
+    if (card.baseId === "TOKEN" && toZone !== 'FIELD') return;
+    if (toZone === 'DECK' && card.origin === 'extra') {
+        const toextra = getPlayerZone(roomId, playerId, "EXTRA");
+        toextra.push(card);
+    } else if (toZone === 'DECK' && toBottom) {
         toArr.unshift(card); // 牌組底部
     } else {
         toArr.push(card); // 其他情況通常是加入末尾 (如墓地、手牌) 或牌組頂部
@@ -362,7 +365,8 @@ function handleMessage(playerId, roomId, message) {
                     name: cardData.name,
                     img: cardData.img,
                     faceDown: true,
-                    tapped: false
+                    tapped: false,
+                    origin: 'main'
                 });
             });
             // 匯入額外牌組 (Extra) - 額外牌組中的卡片預設為蓋牌
@@ -373,7 +377,8 @@ function handleMessage(playerId, roomId, message) {
                     name: cardData.name,
                     img: cardData.img,
                     faceDown: true,
-                    tapped: false
+                    tapped: false,
+                    origin: 'extra'
                 });
             });
             // 匯入備牌 (Side) - 備牌區中的卡片預設為正面
@@ -384,7 +389,8 @@ function handleMessage(playerId, roomId, message) {
                     name: cardData.name,
                     img: cardData.img,
                     faceDown: false,
-                    tapped: false
+                    tapped: false,
+                    origin: 'side'
                 });
             });
 
@@ -411,8 +417,7 @@ function handleMessage(playerId, roomId, message) {
                     ...zones.GRAVE,
                     ...zones.BANISH,
                     ...zones.FIELD,
-                    ...zones.SIDE, // 假設 Side 也重置回牌組
-                    ...zones.EXTRA // 額外牌組重置回 EXTRA 區
+                    ...zones.SIDE // 假設 Side 也重置回牌組
                 ];
                 zones.HAND.length = 0;
                 zones.GRAVE.length = 0;
@@ -424,8 +429,11 @@ function handleMessage(playerId, roomId, message) {
                     card.tapped = false;
                     card.pos = undefined;
                     card.faceDown = true;
-                    if (zones.EXTRA.includes(card)) {
+                    if (card.baseId === 'TOKEN') return;
+                    if (card.origin == "extra") {
                         // 額外牌組卡片留在 EXTRA 區
+                        zones.EXTRA.push(card);
+
                     } else {
                         // 其他卡片移回 DECK
                         zones.DECK.push(card);
@@ -465,7 +473,7 @@ function handleMessage(playerId, roomId, message) {
                 id: generateId('t'),
                 baseId: 'TOKEN',
                 name: 'Token',
-                img: 'https://via.placeholder.com/80x120/000000/FFFFFF?text=TOKEN', // 預設圖片
+                img: 'https://ygomjson.untapped.gg/art/full/en-us/512/tkn1/73915052.webp', // 預設圖片
                 faceDown: false,
                 tapped: false,
                 pos: pos
